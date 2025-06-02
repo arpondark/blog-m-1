@@ -24,11 +24,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const router = useRouter();
 
+  const checkTokenExpiration = () => {
+    const loginTime = localStorage.getItem('loginTime');
+    if (loginTime) {
+      const currentTime = Date.now();
+      const timeElapsed = currentTime - parseInt(loginTime);
+      const tenMinutesInMs = 10 * 60 * 1000; // 10 minutes in milliseconds
+      
+      if (timeElapsed >= tenMinutesInMs) {
+        // Token has expired
+        logout();
+        alert('Your session has expired. Please log in again.');
+        return false;
+      }
+    }
+    return true;
+  };
+
   const checkAuth = () => {
     const token = localStorage.getItem('token');
     const userData = localStorage.getItem('user');
     
     if (token && userData) {
+      // Check if token has expired
+      if (!checkTokenExpiration()) {
+        return; // Token expired, user already logged out
+      }
+      
       try {
         const parsedUser = JSON.parse(userData);
         setUser(parsedUser);
@@ -46,6 +68,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = (token: string, userData: User) => {
     localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify(userData));
+    // Store login timestamp for token expiration tracking
+    localStorage.setItem('loginTime', Date.now().toString());
     setUser(userData);
     setIsAuthenticated(true);
   };
@@ -53,6 +77,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    localStorage.removeItem('loginTime');
     setUser(null);
     setIsAuthenticated(false);
     router.push('/');
@@ -63,7 +88,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     // Listen for storage changes in other tabs
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'token' || e.key === 'user') {
+      if (e.key === 'token' || e.key === 'user' || e.key === 'loginTime') {
         checkAuth();
       }
     };

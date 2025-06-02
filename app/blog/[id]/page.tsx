@@ -81,7 +81,10 @@ const BlogPost = async ({ params }: { params: Promise<PageParams> }) => {
       </div>
 
       <div className="prose prose-lg max-w-none">
-        <div dangerouslySetInnerHTML={{ __html: data.desc }} />
+        {data.desc }
+      </div>
+      <div>
+      {data.content }
       </div>
     </div>
   );
